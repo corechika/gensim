@@ -593,7 +593,7 @@ class EuclideanKeyedVectors(KeyedVectorsBase):
         """
         return self.most_similar(positive=[vector], topn=topn, restrict_vocab=restrict_vocab)
 
-    def wmdistance(self, document1, document2):
+    def wmdistance(self, document1, document2, weight1, weight2):
         """
         Compute the Word Mover's Distance between two documents. When using this
         code, please consider citing the following papers:
@@ -648,7 +648,15 @@ class EuclideanKeyedVectors(KeyedVectorsBase):
             )
             return float('inf')
 
+        if len(weight1) != len(document1) or len(weight2) != len(document2):
+            logger.info(
+                "At least one of the weights length and number of words do not match. "
+                "Aborting (returning inf)."
+            )
+            return float('inf')
+
         dictionary = Dictionary(documents=[document1, document2])
+        weight = weight1 + weight2
         vocab_len = len(dictionary)
 
         if vocab_len == 1:
@@ -661,8 +669,8 @@ class EuclideanKeyedVectors(KeyedVectorsBase):
 
         # Compute distance matrix.
         distance_matrix = zeros((vocab_len, vocab_len), dtype=double)
-        for i, t1 in dictionary.items():
-            for j, t2 in dictionary.items():
+        for i, t1, w1 in zip(dictionary.keys(), dictionary.values(), weight):
+            for j, t2, w2 in zip(dictionary.keys(), dictionary.values(), weight):
                 if t1 not in docset1 or t2 not in docset2:
                     continue
                 # Compute Euclidean distance between word vectors.

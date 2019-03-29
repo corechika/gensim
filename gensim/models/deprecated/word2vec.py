@@ -1455,12 +1455,12 @@ class Word2Vec(SaveLoad):
         """
         return self.wv.most_similar(positive, negative, topn, restrict_vocab, indexer)
 
-    def wmdistance(self, document1, document2):
+    def wmdistance(self, document1, document2, weight1, weight2):
         """
         Deprecated. Use self.wv.wmdistance() instead.
         Refer to the documentation for `gensim.models.KeyedVectors.wmdistance`
         """
-        return self.wv.wmdistance(document1, document2)
+        return self.wv.wmdistance(document1, document2, weight1, weight2)
 
     def most_similar_cosmul(self, positive=None, negative=None, topn=10):
         """

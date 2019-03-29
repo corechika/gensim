@@ -661,7 +661,7 @@ class WordEmbeddingsKeyedVectors(BaseKeyedVectors):
             index, dictionary, tfidf=tfidf, nonzero_limit=nonzero_limit, dtype=dtype)
         return similarity_matrix.matrix
 
-    def wmdistance(self, document1, document2):
+    def wmdistance(self, document1, document2, weight1, weight2):
         """Compute the Word Mover's Distance between two documents.
 
         When using this code, please consider citing the following papers:
@@ -720,7 +720,15 @@ class WordEmbeddingsKeyedVectors(BaseKeyedVectors):
             )
             return float('inf')
 
+        if len(weight1) != len(document1) or len(weight2) != len(document2):
+            logger.info(
+                "At least one of the weights length and number of words do not match. "
+                "Aborting (returning inf)."
+            )
+            return float('inf')
+
         dictionary = Dictionary(documents=[document1, document2])
+        weight = weight1 + weight2
         vocab_len = len(dictionary)
 
         if vocab_len == 1:
@@ -733,16 +741,16 @@ class WordEmbeddingsKeyedVectors(BaseKeyedVectors):
 
         # Compute distance matrix.
         distance_matrix = zeros((vocab_len, vocab_len), dtype=double)
-        for i, t1 in dictionary.items():
+        for i, t1, w1 in zip(dictionary.keys(), dictionary.values(), weight):
             if t1 not in docset1:
                 continue
 
-            for j, t2 in dictionary.items():
+            for j, t2, w2 in zip(dictionary.keys(), dictionary.values(), weight):
                 if t2 not in docset2 or distance_matrix[i, j] != 0.0:
                     continue
 
                 # Compute Euclidean distance between word vectors.
-                distance_matrix[i, j] = distance_matrix[j, i] = sqrt(np_sum((self[t1] - self[t2])**2))
+                distance_matrix[i, j] = distance_matrix[j, i] = sqrt(np_sum(((self[t1] * w1) - (self[t2] * w2))**2))
 
         if np_sum(distance_matrix) == 0.0:
             # `emd` gets stuck if the distance matrix contains only zeros.
